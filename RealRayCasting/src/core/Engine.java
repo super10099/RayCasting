@@ -3,6 +3,7 @@ package core;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
@@ -16,7 +17,7 @@ public class Engine extends javax.swing.JFrame implements Runnable{
 	private GridPanel gridPanel;
 	private Player player;
 	
-	private int[][] map = {
+	private static int[][] map = {
 			
 			{1,1,1,1,1,1,1,1,1,1},
 			{0,0,0,0,0,0,0,0,0,0},
@@ -30,6 +31,11 @@ public class Engine extends javax.swing.JFrame implements Runnable{
 			{1,1,1,1,1,1,1,1,1,1},
 			
 	};
+	
+	public static int getCellCollision(Point cellPoint) {
+		
+		return map[cellPoint.x][cellPoint.y];
+	}
 	
 	public Engine(String title) {
 		super(title);

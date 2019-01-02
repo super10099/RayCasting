@@ -5,6 +5,10 @@ import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
+
+import rayessentials.Ray;
+import rayessentials.RayDot;
+
 import java.awt.Color;
 import java.awt.Graphics;
 
@@ -21,8 +25,8 @@ public class Player {
 	private int height = 10;
 	
 	private double dir = 0; // in radians
-	private int view_distance = 500;
-	private double FOV = Math.toRadians(45);
+	private int view_distance = 100;
+	private double FOV = Math.toRadians(40);
 	
 	private java.awt.Color playerColor = java.awt.Color.RED;
 	
@@ -39,14 +43,16 @@ public class Player {
 		
 		//Intersection dots
 		g.setColor(Color.YELLOW);
-		LinkedList<Point> intersectionPoints = getLineOfIntersections(view_distance, x, y, dir); // gets intersections
-		Iterator<Point> it = intersectionPoints.iterator();
+		LinkedList<Ray> rays = getSpectralRays(view_distance, x, y, dir); // full ray spectrum (FOV)
+		Iterator<Ray> rays_it = rays.iterator();
 		
-		//System.out.println(intersectionPoints);
-		
-		while (it.hasNext()) {
-			Point point = it.next();
-			g.fillRect(point.x - 2, point.y - 2, 4, 4);
+		//need to revamp
+		while (rays_it.hasNext()) {
+			Ray ray = rays_it.next();
+			
+			for (RayDot rayDot : ray) {
+				g.fillRect(rayDot.x - 2, rayDot.y - 2, 4, 4);
+			}
 		}
 	}
 	
@@ -88,13 +94,35 @@ public class Player {
 	 */
 	public boolean checkWithinRange(Point p1, Point p2, double dist) {
 		
-		double distbet = Point.distance(p1.x, p1.y, p2.x, p2.y);
+		double distbet = getDistance(p1, p2);
 		
 		return  distbet <= dist;
 		
 	}
 	
+	public double getDistance(Point p1, Point p2) {
+		
+		double distbet = Point.distance(p1.x, p1.y, p2.x, p2.y);
+		
+		return  distbet;
+		
+	}
 	
+	
+	/*
+	 * gets cell depending on direction and dimensional constant
+	 */
+	public Point getCell(RayDot rayDot, double dir) {
+		
+		int cellX = 0;
+		int cellY = 0;
+		
+		//ALWAYS ROUND DOWN (The gridding has been handled by the intersection method)
+		cellX = Math.round(rayDot.x / Engine.GridPanel.gap);
+		cellY = Math.round(rayDot.y / Engine.GridPanel.gap);
+		
+		return new Point(cellX, cellY);
+	}
 	
 	/*
 	 * This method will return a bunch of intersections on a line based on the given Intersections
@@ -102,31 +130,35 @@ public class Player {
 	 * 
 	 * @return a linkedlist containing the intersections on a line
 	 */
-	public LinkedList<Point> getSpecificLineOfIntersections(Point playerPos, int view_distance, Intersections intersections){
-		LinkedList<Point> points = new LinkedList<>();
+	public LinkedList<RayDot> getDimensionalRay(Point playerPos, int view_distance, Intersections intersections, double dir){
+		LinkedList<RayDot> rayDimensional = new LinkedList<>();
 		
-		Point firstIntersectionPoint = intersections.getStartingPoint();
+		RayDot firstRayDot = intersections.getStartingPoint();
 		Point incrementalPoint = intersections.getIncrementalPoint();
 		
 		boolean outOfRange = true;
-		if (checkWithinRange(playerPos, firstIntersectionPoint, view_distance)) {
+		if (checkWithinRange(playerPos, firstRayDot, view_distance)) {
 			outOfRange = false;
-			points.add(firstIntersectionPoint);
+			rayDimensional.add(firstRayDot);
 		}
 		
 		while (!outOfRange) {
 			
-			Point newPoint = new Point();
-			newPoint.setLocation(points.peekLast().x + incrementalPoint.x, points.peekLast().y + incrementalPoint.y);
+			RayDot newPoint = new RayDot();
+			newPoint.setLocation(rayDimensional.peekLast().x + incrementalPoint.x, rayDimensional.peekLast().y + incrementalPoint.y);
+			
+			newPoint.setCell(getCell(newPoint, dir));
+			newPoint.checkHit();
+			newPoint.setDistance(getDistance(playerPos, newPoint));
 			
 			outOfRange = !checkWithinRange(playerPos, newPoint, view_distance);
 			if(!outOfRange) {
-				points.add(newPoint);
+				rayDimensional.add(newPoint);
 			}
 		}
 		
 		
-		return points;
+		return rayDimensional;
 	}
 	
 	
@@ -136,24 +168,26 @@ public class Player {
 	 * 
 	 * @return a list of intersections including the xconstant and yconstant given radius or view_distance
 	 */
-	public LinkedList<Point> getLineOfIntersections(int view_distance, int x, int y, double dir) {
+	public LinkedList<Ray> getSpectralRays(int view_distance, int x, int y, double dir) {
 		
 		Point playerPos = new Point(x, y);
-		LinkedList<Point> points = new LinkedList<>();
+		LinkedList<Ray> rays = new LinkedList<>();
 		
 		double tempTheta = dir - (FOV/2);
 		//Loop as many pixels across
 		for (int i=0; i<Engine.GamePanel.WIDTH; i++) {
 			tempTheta += FOV/Engine.GamePanel.WIDTH;
-			LinkedList<Point> ycons = getSpecificLineOfIntersections(playerPos, view_distance, getIntersections(tempTheta, "y", y, x));
-			LinkedList<Point> xcons = getSpecificLineOfIntersections(playerPos, view_distance, getIntersections(tempTheta, "x", x, y));
-
-			points.addAll(ycons);
-			points.addAll(xcons);
+			LinkedList<RayDot> xcons = getDimensionalRay(playerPos, view_distance, getIntersections(tempTheta, "x", x, y), dir);
+			LinkedList<RayDot> ycons = getDimensionalRay(playerPos, view_distance, getIntersections(tempTheta, "y", y, x), dir);
+			
+			Ray ray = new Ray(xcons, ycons);
+			ray.parse();
+			ray.constructRay();
+			rays.add(ray);
 		}
 		
 		
-		return points;
+		return rays;
 		
 	}
 	
@@ -227,10 +261,10 @@ public class Player {
 	}
 	
 	private class Intersections {
-		private Point startingPoint = new Point();
+		private RayDot startingPoint = new RayDot();
 		private Point incrementalPoint = new Point();
 		
-		//GETTERS
+		//SETTERS
 		public void setStartingPoint(int x, int y) {
 			startingPoint.setLocation(x, y);
 		}
@@ -240,8 +274,8 @@ public class Player {
 		}
 		
 		
-		//SETTERS
-		public Point getStartingPoint() {
+		//GETTERS
+		public RayDot getStartingPoint() {
 			return startingPoint;
 		}
 		
