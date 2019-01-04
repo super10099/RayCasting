@@ -1,6 +1,10 @@
 package rayessentials;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+
+import core.Engine;
+
 import java.awt.Point;
 
 //the head is currentHit
@@ -19,34 +23,28 @@ public class Ray extends LinkedList<RayDot> {
 		this.ycons = ycons;
 	}
 	
+	
 	/*
 	 * constructs ray with all rayDots that lead to the closest hitted rayDot
 	 */
-	
 	public void constructRay() {
 		
-		if (currentHit != null) {
-			for (RayDot rayDot: xcons) {
-				if (rayDot.getDistance() < currentHit.getDistance())
-					add(rayDot);
-			}
-			
-			for (RayDot rayDot: ycons) {
-				if (rayDot.getDistance() < currentHit.getDistance())
-					add(rayDot);
-			}
-		} else {
-			addAll(xcons);
-			addAll(ycons);
+		if (currentHit != null)
+			addFirst(currentHit);
+		
+		for (RayDot rayDot: xcons) {
+			if (rayDot.getHit() && rayDot.getDistance() < currentHit.getDistance())
+				add(rayDot);
+		}
+		for (RayDot rayDot: ycons) {
+			if (rayDot.getHit() && rayDot.getDistance() < currentHit.getDistance())
+				add(rayDot);
 		}
 	}
 	
 	
-	
 	/*
 	 * gets closest rayDot (hitted)
-	 * 
-	 * 
 	 */
 	public void parse() {
 		for (RayDot rayDot : xcons) {
@@ -56,15 +54,14 @@ public class Ray extends LinkedList<RayDot> {
 		for (RayDot rayDot : ycons) {
 			updateCurrentHit(rayDot);
 		}
-		
-		if (currentHit != null)
-			addFirst(currentHit);
+
 	}
 	
 	public void updateCurrentHit(RayDot rayDot) {
 		if (rayDot.getHit()) {
-			if (currentHit == null)
+			if (currentHit == null) {
 				currentHit = rayDot;
+			}
 			else if (rayDot.getDistance() < currentHit.getDistance())
 				currentHit = rayDot;
 		}
@@ -72,7 +69,6 @@ public class Ray extends LinkedList<RayDot> {
 	
 	
 	/*
-	 * 
 	 * @return true if first is shorter than second
 	 */
 	private boolean compareDotDistance(RayDot first, RayDot second) {

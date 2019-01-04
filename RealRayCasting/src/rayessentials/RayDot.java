@@ -19,16 +19,13 @@ public class RayDot extends Point {
 	}
 	
 	public boolean checkHit() {
+		
 		try {
-			if (cell.x < 10 && cell.y < 10) {
-				if (Engine.getCellCollision(cell) != 0) {
-					hit = true;
-					return true;
-				}
+			if (Engine.getCellCollision(cell) != 0) {
+				hit = true;
+				return true;
 			}
-		} catch (ArrayIndexOutOfBoundsException ex) {
-			System.out.println(cell);
-		}
+		} catch (ArrayIndexOutOfBoundsException ex) {}
 		return false;
 	}
 	

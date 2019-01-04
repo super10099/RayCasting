@@ -18,15 +18,15 @@ public class Player {
 	private int x;
 	private int y;
 	
-	private int moveIncrement = 10;
+	private int moveIncrement = 1;
 	private double thetaIncrement = (Math.PI*2) / 200;
 	
 	private int width = 10;
 	private int height = 10;
 	
 	private double dir = 0; // in radians
-	private int view_distance = 100;
-	private double FOV = Math.toRadians(40);
+	private int view_distance = 400;
+	private double FOV = Math.toRadians(50);
 	
 	private java.awt.Color playerColor = java.awt.Color.RED;
 	
@@ -36,22 +36,37 @@ public class Player {
 	}
 	
 	
+	
 	public void draw(Graphics g) {
 		//draw player dot
 		g.setColor(playerColor);
 		g.fillOval(x - width/2, y - width/2, width, height);
 		
+		//Color visor
+		g.setColor(Color.ORANGE);
+		int visorDist = 5;
+		int vx = (int) (Math.cos(-dir) * visorDist);
+		int vy = (int) (Math.sin(-dir) * visorDist);
+		g.fillOval(x + (vx - 3), y + (vy - 3), 6, 6);
+		
+		
 		//Intersection dots
-		g.setColor(Color.YELLOW);
 		LinkedList<Ray> rays = getSpectralRays(view_distance, x, y, dir); // full ray spectrum (FOV)
 		Iterator<Ray> rays_it = rays.iterator();
-		
 		//need to revamp
 		while (rays_it.hasNext()) {
 			Ray ray = rays_it.next();
-			
 			for (RayDot rayDot : ray) {
-				g.fillRect(rayDot.x - 2, rayDot.y - 2, 4, 4);
+				
+				//color cell
+				g.setColor(Color.GRAY);
+				int x = rayDot.getCell().x * Engine.GridPanel.gap;
+				int y = rayDot.getCell().y * Engine.GridPanel.gap;;
+				g.fillRect(x, y, Engine.GridPanel.gap, Engine.GridPanel.gap);
+				
+				//color rayDots
+				g.setColor(Color.ORANGE);
+				g.fillRect(rayDot.x- 2 , rayDot.y - 2, 4, 4);
 			}
 		}
 	}
@@ -124,6 +139,15 @@ public class Player {
 		return new Point(cellX, cellY);
 	}
 	
+	
+	public void addRayDot(LinkedList<RayDot> rayDimensional, RayDot rayDot, Point playerPos) {
+		
+		rayDot.setCell(getCell(rayDot, dir));
+		rayDot.checkHit();
+		rayDot.setDistance(getDistance(playerPos, rayDot));
+		rayDimensional.add(rayDot);
+	}
+	
 	/*
 	 * This method will return a bunch of intersections on a line based on the given Intersections
 	 * 
@@ -139,7 +163,7 @@ public class Player {
 		boolean outOfRange = true;
 		if (checkWithinRange(playerPos, firstRayDot, view_distance)) {
 			outOfRange = false;
-			rayDimensional.add(firstRayDot);
+			addRayDot(rayDimensional, firstRayDot, playerPos);
 		}
 		
 		while (!outOfRange) {
@@ -147,13 +171,9 @@ public class Player {
 			RayDot newPoint = new RayDot();
 			newPoint.setLocation(rayDimensional.peekLast().x + incrementalPoint.x, rayDimensional.peekLast().y + incrementalPoint.y);
 			
-			newPoint.setCell(getCell(newPoint, dir));
-			newPoint.checkHit();
-			newPoint.setDistance(getDistance(playerPos, newPoint));
-			
 			outOfRange = !checkWithinRange(playerPos, newPoint, view_distance);
 			if(!outOfRange) {
-				rayDimensional.add(newPoint);
+				addRayDot(rayDimensional, newPoint, playerPos);
 			}
 		}
 		
@@ -217,7 +237,7 @@ public class Player {
 			if (quad == 1 | quad == 4) {
 				fx = (Math.round(constantVal / Engine.GridPanel.gap) + 1) * Engine.GridPanel.gap;
 			} else if (quad == 2 || quad == 3) {
-				fx = Math.round(constantVal / Engine.GridPanel.gap) * Engine.GridPanel.gap;
+				fx = (Math.round(constantVal / Engine.GridPanel.gap) * Engine.GridPanel.gap) - 1 ;
 			}
 			
 			//setting fy
@@ -239,7 +259,7 @@ public class Player {
 			
 			//setting fy
 			if (quad == 1 | quad == 2) {
-				fy = Math.round(constantVal / Engine.GridPanel.gap) * Engine.GridPanel.gap;
+				fy = (Math.round(constantVal / Engine.GridPanel.gap) * Engine.GridPanel.gap) - 1;
 			} else if (quad == 3 | quad == 4) {
 				fy = (Math.round(constantVal / Engine.GridPanel.gap) + 1) * Engine.GridPanel.gap;
 			}

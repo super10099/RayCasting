@@ -13,28 +13,33 @@ public class Engine extends javax.swing.JFrame implements Runnable{
 	
 	public static InputHandler inputHandler;
 
+	public static Player player;
 	private GamePanel gamePanel;
 	private GridPanel gridPanel;
-	private Player player;
+
+
 	
 	private static int[][] map = {
 			
 			{1,1,1,1,1,1,1,1,1,1},
+			{0,0,0,0,0,0,0,0,1,0},
 			{0,0,0,0,0,0,0,0,0,0},
-			{0,0,0,0,0,0,0,0,0,0},
-			{0,0,0,0,1,0,0,0,0,0},
-			{0,0,0,0,0,0,0,0,0,0},
+			{0,0,0,1,1,0,0,0,1,0},
+			{0,0,0,1,1,1,0,0,0,0},
 			{0,0,0,0,0,1,0,0,0,0},
 			{0,0,0,0,0,0,0,0,0,0},
-			{0,0,0,0,0,0,0,0,0,0},
+			{0,1,0,0,0,0,0,1,1,0},
 			{0,0,0,0,0,0,0,0,0,0},
 			{1,1,1,1,1,1,1,1,1,1},
 			
 	};
 	
+	
 	public static int getCellCollision(Point cellPoint) {
 		
-		return map[cellPoint.x][cellPoint.y];
+		//Rows are y's
+		//Columns are x's
+		return map[cellPoint.y][cellPoint.x];
 	}
 	
 	public Engine(String title) {
@@ -66,7 +71,7 @@ public class Engine extends javax.swing.JFrame implements Runnable{
 	
 	public void run() {
 		
-		final int PREFERRED_FPS = 45;
+		final int PREFERRED_FPS = 140;
 		
 		double ns = 1000000000 / PREFERRED_FPS;
 		double deltaTime = 0;
